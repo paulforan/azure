@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RX Genesys Cloud CX to watsonx Orchestrate SaaS Interface v0.2</title>
+<style>
+  :root{
+    --ink:#1b1f2a; --muted:#5b6170; --line:#c9ced8; --paper:#ffffff;
+    --gen:#e7f6ee; --gen-b:#2f8f5b;      /* Genesys */
+    --wxo:#fff6d6; --wxo-b:#c08a00;      /* watsonx Orchestrate */
+    --rx:#e9ecff;  --rx-b:#4c5bd4;       /* RX AWS */
+    --edge:#f3e8ff; --edge-b:#7c3aed;    /* RX edge */
+    --uc1:#6d28d9; --uc2:#15803d; --uc3:#1d4ed8; --uc4:#c2410c; --uc5:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.3 "Helvetica Neue",Arial,sans-serif;width:2620px;height:2010px;position:relative}
+  h1{position:absolute;left:40px;top:22px;margin:0;font-size:34px;font-weight:700;letter-spacing:-.3px}
+  .sub{position:absolute;left:40px;top:66px;font-size:15px;color:var(--muted)}
+  .zone{position:absolute;border:2px dashed;border-radius:14px}
+  .zone .zt{position:absolute;left:14px;top:-14px;background:var(--paper);padding:0 8px;font-weight:700;font-size:17px}
+  .zone .zs{position:absolute;left:14px;top:12px;font-size:12px;color:var(--muted);max-width:95%}
+  .box{position:absolute;border:1.5px solid var(--line);border-radius:8px;background:#fff;padding:8px 10px;font-size:12.5px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+  .box b{display:block;font-size:13.5px;margin-bottom:3px}
+  .box small{color:var(--muted);font-size:11.5px;display:block;line-height:1.28}
+  .actor{position:absolute;width:280px;text-align:left;padding:8px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fafbfd;font-size:12.5px}
+  .actor b{display:block;font-size:13.5px}
+  .actor small{color:var(--muted);font-size:11.5px;display:block}
+  .gen .box{border-color:var(--gen-b)}
+  .wxo .box{border-color:var(--wxo-b)}
+  .rx  .box{border-color:var(--rx-b)}
+  .badge{display:inline-block;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-right:4px;vertical-align:middle}
+  .b1{background:var(--uc1)} .b2{background:var(--uc2)} .b3{background:var(--uc3)} .b4{background:var(--uc4)} .b5{background:var(--uc5)}
+  .lbl{position:absolute;font-size:11.5px;line-height:1.25;background:rgba(255,255,255,.96);padding:2px 5px;border-radius:4px;border:1px solid #eef0f4;max-width:250px}
+  .lbl.c1{color:var(--uc1)} .lbl.c2{color:var(--uc2)} .lbl.c3{color:var(--uc3)} .lbl.c4{color:var(--uc4)} .lbl.c5{color:var(--uc5)}
+  svg.arrows{position:absolute;left:0;top:0;pointer-events:none}
+  table{position:absolute;border-collapse:collapse;font-size:11.5px;background:#fff}
+  th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}
+  th{background:#f1f3f7;font-size:11.5px}
+  td.n{font-weight:700;text-align:center;width:28px}
+  .note{position:absolute;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11.8px;background:#fbfbfd}
+  .note b{display:block;font-size:13px;margin-bottom:4px}
+  .note ul{margin:0;padding-left:16px}
+  .note li{margin:2px 0}
+  .legend span{display:inline-block;margin-right:14px}
+  .sw{display:inline-block;width:26px;height:4px;vertical-align:middle;margin-right:5px;border-radius:2px}
+  .tbd{color:#b45309;font-weight:700}
+  .fixed{color:#15803d;font-weight:700}
+</style>
+</head>
+<body>
+
+<h1>Riyadh Air Concierge · Genesys Cloud CX ⇄ IBM watsonx Orchestrate (SaaS) · Interface Design v0.2 (corrected)</h1>
+<div class="sub">Replaces "GeneSys / WXO SaaS Interface" v0.1. Sources: TPI PI3 LLD (May 2025), TPI Genesys CCaaS HLD v3 §16.3/§17.4.7 (Sep 2025), Watson–RX Integration Governance v1.0 (May 2026), IST/RX design-documents thread (20–27 Sep 2026). Arrow dot = initiator (drives firewall allowlisting). Colours = use case.</div>
+
+<!-- ============ ACTORS ============ -->
+<div class="actor" style="left:40px;top:150px"><b>UC1 · Guest phone call</b><small>PSTN → call-collection vendor (Etisalcom) → SIP/SRTP trunk into Genesys Frankfurt. ANI + DNIS carried in SIP headers.</small></div>
+<div class="actor" style="left:40px;top:305px"><b>UC2 · Social messaging</b><small>WhatsApp (Meta WABA, RX-owned number), Facebook Messenger, X DMs. All three terminate on Genesys ACD Messaging (thread 22 Sep: FB/X now via Bot Connector in Dev, reversing PI3 LLD).</small></div>
+<div class="actor" style="left:40px;top:470px"><b>UC3 · Guest chat, Web &amp; Mobile</b><small>RX website and RX mobile app. Watson-first (HLD v3 §16.3.1 item 3). Must expose Digital Control Toggle: flag switches UI to legacy Genesys Messenger L1 (governance §4.4 kill switch).</small></div>
+<div class="actor" style="left:40px;top:720px"><b>UC4 · RX contact-centre agent</b><small>Genesys agent desktop (WebRTC) + Custom Agent Desktop. Agent Assist is the only Concierge capability live in PROD today (thread 22 Sep).</small></div>
+
+<!-- ============ GENESYS ZONE ============ -->
+<div class="zone gen" style="left:360px;top:120px;width:720px;height:860px;border-color:var(--gen-b);background:var(--gen)">
+  <div class="zt" style="color:var(--gen-b)">Genesys Cloud CX · RX org · AWS Frankfurt (api/login.mypurecloud.de)</div>
+  <div class="zs">PROD + UAT orgs. Genesys is already SaaS; only the WXO side moves PaaS (ROSA/CPD) → SaaS (AWS).</div>
+
+  <div class="box" style="left:15px;top:45px;width:300px;height:100px"><b>Architect Inbound Call Flow</b><small>BYOC/carrier trunk → flow. Sets input vars, calls <i>Call Audio Connector</i> action, reads output vars, branches on VA_INTENT. Failure/timeout path → default queue (governance §3.3).</small></div>
+  <div class="box" style="left:330px;top:45px;width:370px;height:100px"><b>Audio Connector integration</b><small>Genesys → WXO wss. Base URI + Connector ID; X-API-KEY header + HMAC-signed connect. Audio 8 kHz PCMU. Limits: 900 s/session, 75 concurrent (150 requested), 10 attempts/s.</small></div>
+
+  <div class="box" style="left:15px;top:170px;width:300px;height:110px"><b>ACD Messaging + Inbound Message Flow</b><small>WhatsApp / Messenger / X integrations. Flow calls <i>Call Bot Connector</i> action; intents TransferToAgent | EndSession map to flow paths. Media: quick replies, cards, carousels OK; images &amp; rich text NOT supported by Bot Connector.</small></div>
+  <div class="box" style="left:330px;top:170px;width:370px;height:110px"><b>Bot Connector integration</b><small>Genesys → WXO HTTPS POST <code>postUtterance</code> JSON, synchronous reply. Bot name/version, verification token header. Same session-variable contract as voice.</small></div>
+
+  <div class="box" style="left:15px;top:305px;width:300px;height:165px"><b>Web Messaging (Messenger) deployments</b><small><b style="display:inline">Two deploymentIds: Web · Mobile</b> — required so MobileChat_* and LiveChat_* queues stay distinguishable (governance §3.4 risk). Guest wss: <code>webmessaging.mypurecloud.de</code>. Inbound Message Flow = existing L1 logic S1/S2/S3: <code>getprofile</code>, <code>RXCRMGenerateToken</code>, <code>CrmDetailsByGuestId</code> data actions → Dynamics CRM (OAuth CC). Reads customAttributes GUEST_ID, LANGUAGE, ORDER_ID, LAST_Name.</small></div>
+  <div class="box" style="left:330px;top:305px;width:370px;height:165px"><b>ACD Routing (unchanged, PI3 matrix)</b><small>Queue = Tier × Language × Channel (BSG, Grey, Loyalty…, EN/AR, Mobile/Live/Voice/WhatsApp). Preferred agent by CRM lookup + presence check, 5 s hold, then Bullseye drops KSA skill. Auto-answer on. Missing/null identity → Unauthenticated (Grey) flow. Watson timeout → bypass to human without dropping interaction.</small></div>
+
+  <div class="box" style="left:15px;top:495px;width:300px;height:160px"><b>Agent desktop integrations</b><small><b style="display:inline">Interaction Widget (iframe):</b> group-permissioned; URL interpolation <code>{{gcConversationId}}</code>, <code>{{gcLangTag}}</code>; no PII in URL; WXO re-validates conversationId via its OAuth client.<br><b style="display:inline">AudioHook Monitor:</b> Genesys → WXO wss, monitor-only copy of live call, API key + secret, max 5 integrations/org, billed while connected.</small></div>
+    <div class="box" style="left:330px;top:495px;width:370px;height:160px"><b>Platform APIs (OAuth client credentials)</b><small>Notifications API: create channel → subscribe topics → wss. Conversations Messaging API: GET messages. Knowledge API: guest sessions + search (variations Default / SOP). Callback API: POST /api/v2/conversations/callbacks. Caps: channels per client &amp; topics per channel → pooled subscriptions, not one per conversation.</small></div>
+
+  <div class="box" style="left:15px;top:680px;width:300px;height:160px"><b>Genesys egress CIDRs (allowlist at RX edge)</b><small>audiohook / bot-connector: 52.58.17.108/32 · 18.194.155.182/32 · 18.194.245.84/32<br>audio-connector: 18.195.11.187/32 · 35.158.4.182/32<br>(PI3 LLD §3.1.3 / §3.2.3; re-confirm against Genesys published list before go-live)</small></div>
+
+  <div class="box" style="left:330px;top:680px;width:370px;height:160px"><b>Existing RX data actions (retained, attribute scope freeze — governance §4.3)</b><small>RX Integration Platform Data Actions category: <code>getprofile</code> (CustomerID→Name), <code>RXCRMGenerateToken</code> (client credentials, scope https://rxmsdprod.api.crm4.dynamics.com/.default), <code>CrmDetailsByGuestId</code> (PreferredAgent, last 3 cases). Skipped for anonymous guests. Retry once → fall back to Unregistered flow. <b style="display:inline">No new attributes in this phase.</b></small></div>
+</div>
+
+<!-- ============ RX EDGE ============ -->
+<div class="zone" style="left:1300px;top:120px;width:190px;height:600px;border-color:var(--edge-b);background:var(--edge)">
+  <div class="zt" style="color:var(--edge-b)">RX Edge</div>
+  <div class="box" style="left:10px;top:38px;width:170px;height:250px;font-size:10.5px;border-color:var(--edge-b)"><b>Akamai WAF + App Gateway</b><small>Public ingress for all Genesys-initiated traffic (UC1, UC2, UC4b) and the agent iframe (UC4a).<br><br>Non-prod host: <code>dev-concierge.riyadhair.io</code><br>Prod host: <span class="tbd">TBD</span><br><br>TLS 1.2+, HTTP→wss upgrade, Genesys CIDR allowlist, header/HMAC validation, rate limits, request logging.</small></div>
+  <div class="box" style="left:10px;top:300px;width:170px;height:130px;font-size:10.5px;border-color:var(--edge-b)"><b>Why it must be drawn</b><small>PI3 LLD had Akamai → App Gateway → WA; v0.1 omitted it. If the WXO tenant is IBM-hosted, this is the RX-owned proxy giving RX the prod hostname, WAF and audit point.</small></div>
+  <div class="box" style="left:10px;top:442px;width:170px;height:145px;font-size:10.5px;border-color:var(--edge-b)"><b>Environments</b><small>Dev → dev-concierge.riyadhair.io (live)<br>UAT/SIT → <span class="tbd">TBD</span><br>Prod → <span class="tbd">TBD</span><br>Genesys UAT org ↔ WXO non-prod; Genesys PROD org ↔ WXO prod.</small></div>
+</div>
+
+<!-- ============ WXO ZONE ============ -->
+<div class="zone wxo" style="left:1560px;top:120px;width:1020px;height:520px;border-color:var(--wxo-b);background:var(--wxo)">
+  <div class="zt" style="color:var(--wxo-b)">IBM watsonx Orchestrate · SaaS on AWS · region <span class="tbd">TBD</span> (latency to Frankfurt &amp; KSA PDPL residency to confirm)</div>
+  <div class="zs">Tenant IDs differ per env (thread: 1782719334397297 bot connector vs 1757505219338034 audio → reconcile: one tenant per environment).</div>
+
+  <div class="box" style="left:20px;top:50px;width:320px;height:125px"><b>Genesys Voice channel (Audio Connector server)</b><small>Path <code>/orchestrate/ibm-software-hub-services/tenants/{t}/agents</code>. Implements AudioHook open/ping/close; STT ⇄ TTS. <b style="display:inline">Decision:</b> IBM speech vs Emotech Saudi-dialect STT/TTS (today on devwatson ROSA, GPU, single replica).</small></div>
+  <div class="box" style="left:360px;top:50px;width:250px;height:125px"><b>Voice Agent (LLM)</b><small>Dialog, ID&amp;V, intent. Returns session vars; must transfer before 900 s cap. Arabic/English by CONVERSATION_LANGUAGE.</small></div>
+
+  <div class="box" style="left:20px;top:195px;width:320px;height:105px"><b>Genesys Bot Connector channel</b><small>Path <code>…/channels/genesys_bot_connector/{channelId}/events</code>. Receives postUtterance, returns replies + intent (TransferToAgent | EndSession) + output vars.</small></div>
+  <div class="box" style="left:360px;top:195px;width:250px;height:105px"><b>Social Agent (LLM)</b><small>WhatsApp / Messenger / X. Text + quick replies + cards only.</small></div>
+
+  <div class="box" style="left:20px;top:325px;width:320px;height:175px"><b>Agent Assist service</b><small>a) iframe web app (Quick Actions, summary, KB, caller-verified badge)<br>b) AudioHook Monitor server → STT → analysis<br>c) Notifications subscriber + Conversations API poller (digital)<br>d) Knowledge API client (Default / SOP variations)<br>Live in PROD today.</small></div>
+  <div class="box" style="left:360px;top:325px;width:250px;height:105px"><b>Agent Assist Agent (LLM)</b><small>Suggested replies, intent/sentiment, KB surfacing, post-call summary.</small></div>
+
+  <div class="box" style="left:640px;top:50px;width:360px;height:440px"><b>Concierge Agent (LLM) + shared skills</b><small>Single source of guest-facing logic, invoked by Voice and Social agents as collaborator and directly by the RX gateway for Web/Mobile (Orchestrate agent chat API).<br><br>Skills/tools: ID&amp;V (GUEST_VERIFIED), guest profile, OOMS orders (ORDER_ID + LAST_Name), Loyalty tier &amp; points, Knowledge search, callback request, transcript summary.<br><br>Emits the handover contract: VA_INTENT, GUEST_TIER, CONVERSATION_LANGUAGE, GUEST_VERIFIED, VA_SESSION_ID, VA_CONVERSATION_SUMMARY, echoes GENESYS_CONVERSATION_ID.<br><br>Observability: Datadog LLM Observability (per RX plan).</small></div>
+</div>
+
+<!-- ============ RX GATEWAY ZONE ============ -->
+<div class="zone rx" style="left:1560px;top:700px;width:1020px;height:320px;border-color:var(--rx-b);background:var(--rx)">
+  <div class="zt" style="color:var(--rx-b)">RX Concierge Gateway (RX AWS landing zone, EKS/ROSA per ARB) · UC3 only</div>
+  <div class="box" style="left:20px;top:50px;width:280px;height:120px"><b>Receiver (wss server)</b><small>Terminates guest chat sockets from web/mobile UI. Guest JWT (RX IdP) or anonymous session. Publishes inbound messages to Redis Streams. Owns reconnect + backpressure.</small></div>
+  <div class="box" style="left:340px;top:50px;width:260px;height:120px"><b>Redis Streams</b><small>Conversation state and ordering. Consumer groups per Processor replica. Multi-AZ, persistence on.</small></div>
+  <div class="box" style="left:640px;top:50px;width:360px;height:120px"><b>Processor</b><small>Calls Concierge Agent (HTTPS, API key/IAM). On TRANSFER_TO_AGENT: mints Genesys Messenger handoff (deploymentId Web|Mobile + customAttributes + summary) and tells UI to switch transport. Does <b style="display:inline">not</b> proxy the agent conversation (recommended pattern, see note).</small></div>
+  <div class="box" style="left:20px;top:190px;width:980px;height:105px"><b>Design decision required: who owns the socket after transfer?</b><small><b style="display:inline">Option A (recommended):</b> UI opens the Genesys Web Messaging guest session itself (token persisted for reconnect); gateway only passes deploymentId, session token and attributes. Reuses the Genesys Messenger SDK for typing, attachments, read receipts, history, and is exactly what the Digital Control Toggle does anyway. <b style="display:inline">Option B (as drawn in v0.1):</b> Processor opens the guest session and relays every agent message both ways for the rest of the chat: must re-implement reconnection, attachments, receipts, and doubles socket load. Either way the pre-transfer transcript reaches the agent only via VA_CONVERSATION_SUMMARY / CAD.</small></div>
+</div>
+
+<!-- ============ ARROWS ============ -->
+<svg class="arrows" width="2620" height="2010" viewBox="0 0 2620 2010">
+  <defs>
+    <marker id="m1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6d28d9"/></marker>
+    <marker id="m2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="m3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d4ed8"/></marker>
+    <marker id="m4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker>
+    <marker id="m5" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+  <g fill="none" stroke-width="2.4" stroke-linecap="round">
+    <!-- UC1 voice -->
+    <path d="M320,190 L372,200" stroke="#6d28d9" marker-end="url(#m1)"/><circle cx="320" cy="190" r="4.5" fill="#6d28d9"/>
+    <path d="M676,200 L688,200" stroke="#6d28d9" marker-end="url(#m1)"/>
+    <path d="M1080,200 L1298,200" stroke="#6d28d9" marker-end="url(#m1)"/><circle cx="1080" cy="200" r="4.5" fill="#6d28d9"/>
+    <path d="M1490,200 L1578,205" stroke="#6d28d9" marker-end="url(#m1)"/>
+    <path d="M1902,212 L1918,212" stroke="#6d28d9" marker-end="url(#m1)"/><path d="M1902,232 L1918,232" stroke="#6d28d9" marker-start="url(#m1)"/>
+    <path d="M2172,215 L2198,215" stroke="#6d28d9" marker-end="url(#m1)" stroke-dasharray="6 5"/>
+    <path d="M1298,250 L1082,250" stroke="#6d28d9" marker-end="url(#m1)" stroke-dasharray="6 5"/>
+    <!-- UC2 social -->
+    <path d="M320,355 L372,355" stroke="#15803d" marker-end="url(#m2)"/><circle cx="320" cy="355" r="4.5" fill="#15803d"/>
+    <path d="M676,340 L688,340" stroke="#15803d" marker-end="url(#m2)"/>
+    <path d="M1080,340 L1298,340" stroke="#15803d" marker-end="url(#m2)"/><circle cx="1080" cy="340" r="4.5" fill="#15803d"/>
+    <path d="M1490,340 L1578,340" stroke="#15803d" marker-end="url(#m2)"/>
+    <path d="M1902,342 L1918,342" stroke="#15803d" marker-end="url(#m2)"/><path d="M1902,362 L1918,362" stroke="#15803d" marker-start="url(#m2)"/>
+    <path d="M2172,345 L2198,345" stroke="#15803d" marker-end="url(#m2)" stroke-dasharray="6 5"/>
+    <path d="M1298,405 L1082,405" stroke="#15803d" marker-end="url(#m2)" stroke-dasharray="6 5"/>
+    <!-- Web Messaging flow -> routing -->
+    <path d="M676,500 L688,500" stroke="#1d4ed8" marker-end="url(#m3)" stroke-dasharray="6 5"/>
+    <!-- UC3 web/mobile -->
+    <path d="M40,560 L20,560 L20,1000 L1520,1000 L1520,810 L1578,810" stroke="#1d4ed8" marker-end="url(#m3)"/><circle cx="40" cy="560" r="4.5" fill="#1d4ed8"/>
+    <path d="M1862,805 L1898,805" stroke="#1d4ed8" marker-end="url(#m3)"/><path d="M1862,825 L1898,825" stroke="#1d4ed8" marker-start="url(#m3)"/>
+    <path d="M2162,805 L2198,805" stroke="#1d4ed8" marker-end="url(#m3)"/><path d="M2162,825 L2198,825" stroke="#1d4ed8" marker-start="url(#m3)"/>
+    <path d="M2380,748 L2380,612" stroke="#1d4ed8" marker-end="url(#m3)"/><circle cx="2380" cy="748" r="4.5" fill="#1d4ed8"/>
+    <path d="M320,525 L372,505" stroke="#1d4ed8" marker-end="url(#m3)" stroke-dasharray="6 5"/><circle cx="320" cy="525" r="4.5" fill="#1d4ed8"/>
+    <!-- UC4 agent assist -->
+    <path d="M320,770 L372,700" stroke="#c2410c" marker-end="url(#m4)"/><circle cx="320" cy="770" r="4.5" fill="#c2410c"/>
+    <path d="M675,615 L675,603 L1080,603 L1298,540" stroke="#c2410c" marker-end="url(#m4)"/><circle cx="675" cy="615" r="4.5" fill="#c2410c"/>
+    <path d="M1490,540 L1578,520" stroke="#c2410c" marker-end="url(#m4)"/>
+    <path d="M1580,600 C1420,760 1250,760 1082,705" stroke="#c2410c" marker-end="url(#m4)"/><circle cx="1580" cy="600" r="4.5" fill="#c2410c"/>
+    <path d="M1902,470 L1918,470" stroke="#c2410c" marker-end="url(#m4)"/><path d="M1902,490 L1918,490" stroke="#c2410c" marker-start="url(#m4)"/>
+    <!-- UC5 callback -->
+    <path d="M1560,770 C1400,800 1250,790 1082,760" stroke="#6b7280" marker-end="url(#m5)" stroke-dasharray="2 5"/><circle cx="1560" cy="770" r="4.5" fill="#6b7280"/>
+  </g>
+</svg>
+
+<!-- ============ ARROW LABELS ============ -->
+<div class="lbl c1" style="left:300px;top:212px;width:70px"><span class="badge b1">1</span>SIP/SRTP</div>
+<div class="lbl c1" style="left:1088px;top:140px;width:205px"><span class="badge b1">1</span>Audio Connector · wss · Genesys initiates · X-API-KEY + HMAC · open msg carries INPUT vars</div>
+<div class="lbl c1" style="left:1088px;top:256px;width:205px">↩ at bot end: VA_INTENT (TRANSFER_TO_AGENT | END_SESSION), GUEST_TIER, CONVERSATION_LANGUAGE, GUEST_VERIFIED, VA_SESSION_ID, VA_CONVERSATION_SUMMARY → ACD Routing</div>
+<div class="lbl c2" style="left:300px;top:372px;width:70px"><span class="badge b2">2</span>webhooks</div>
+<div class="lbl c2" style="left:1088px;top:348px;width:205px"><span class="badge b2">2</span>Bot Connector · HTTPS POST postUtterance · Genesys initiates · verification token · sync JSON reply</div>
+<div class="lbl c2" style="left:1088px;top:412px;width:205px">↩ TransferToAgent | EndSession + same OUTPUT vars → ACD Routing</div>
+<div class="lbl c3" style="left:40px;top:598px;width:260px"><span class="badge b3">3c</span>On TRANSFER_TO_AGENT, or Toggle = Genesys: UI opens Web Messaging guest wss · deploymentId Web | Mobile · customAttributes GUEST_ID, LANGUAGE, ORDER_ID, LAST_Name, VA_SESSION_ID, VA_CONVERSATION_SUMMARY → existing S1/S2/S3 flow</div>
+<div class="lbl c3" style="left:400px;top:1008px;width:900px"><span class="badge b3">3a</span>Guest chat · wss to RX Concierge gateway · guest JWT or anonymous · Watson-first: Genesys is not involved until transfer or Toggle</div>
+<div class="lbl c3" style="left:2395px;top:655px;width:180px"><span class="badge b3">3b</span>Orchestrate agent chat API · HTTPS · API key/IAM · Processor initiates</div>
+<div class="lbl c4" style="left:40px;top:830px;width:260px"><span class="badge b4">4a</span>Agent accepts routed interaction (ACD, WebRTC) → Interaction Widget launches</div>
+<div class="lbl c4" style="left:1088px;top:500px;width:205px"><span class="badge b4">4a</span>iframe · HTTPS · browser initiates · conversationId via URL interpolation<br><span class="badge b4">4b</span>AudioHook Monitor · wss · Genesys initiates · API key + secret</div>
+<div class="lbl c4" style="left:1088px;top:640px;width:205px"><span class="badge b4">4c</span>Notifications API wss + Conversations / Knowledge API HTTPS · WXO initiates · OAuth client credentials</div>
+<div class="lbl c5" style="left:1300px;top:735px;width:250px"><span class="badge b5">5</span>Callback API · HTTPS · WXO / gateway initiates · OAuth · POST /api/v2/conversations/callbacks</div>
+
+<!-- ============ INTERFACE CONTRACT TABLE ============ -->
+<table style="left:40px;top:1060px;width:2540px">
+  <tr><th>#</th><th>Interface</th><th>Initiator → target</th><th>Protocol</th><th>Auth / trust</th><th>Data contract</th><th>Non-prod endpoint (known today)</th><th>Prod</th><th>Limits · fallback</th></tr>
+  <tr><td class="n">1</td><td>Audio Connector</td><td>Genesys → WXO</td><td>wss (AudioHook), 8 kHz PCMU, JSON control</td><td>X-API-KEY + HMAC-signed connect; Genesys CIDRs allowlisted at edge</td><td>IN: Channel=VOICE, GUEST_MOBILE_NO, GUEST_MOBILE_NO_COUNTRY_CODE, RX_CALLED_NO, RX_CALLED_NO_COUNTRY_CODE, GENESYS_CONVERSATION_ID · OUT: VA_INTENT, GUEST_TIER, CONVERSATION_LANGUAGE, GUEST_VERIFIED, VA_SESSION_ID, VA_CONVERSATION_SUMMARY</td><td><code>wss://dev-concierge.riyadhair.io/orchestrate/ibm-software-hub-services/tenants/{t}/agents</code> (replaces <code>wss://cpd-…</code> PaaS host in v0.1 table)</td><td><span class="tbd">TBD</span></td><td>900 s session cap, 75 concurrent (150 requested), 10 attempts/s. Connect fail / timeout → Architect failure path → language default queue, no drop.</td></tr>
+  <tr><td class="n">2</td><td>Bot Connector</td><td>Genesys → WXO</td><td>HTTPS POST postUtterance, sync JSON reply</td><td>Verification token header; CIDR allowlist; TLS 1.2+</td><td>Same IN/OUT contract with Channel=WHATSAPP | FACEBOOK | X; intents TransferToAgent / EndSession; no images or rich text</td><td><code>https://dev-concierge.riyadhair.io/orchestrate/…/channels/genesys_bot_connector/{channelId}/events</code></td><td><span class="tbd">TBD</span></td><td>Bot HTTP error / timeout → flow error path → Grey queue with LANGUAGE default EN</td></tr>
+  <tr><td class="n">3</td><td>Web Messaging guest session</td><td>RX web / mobile UI → Genesys</td><td>wss</td><td>deploymentId (Web, Mobile) + domain allowlist; session token persisted for reconnect</td><td>customAttributes: GUEST_ID, LANGUAGE, ORDER_ID, LAST_Name, VA_SESSION_ID, VA_CONVERSATION_SUMMARY (attribute scope freeze: no others)</td><td><code>wss://webmessaging.mypurecloud.de/v1?deploymentId=…</code> <span class="fixed">Genesys-hosted, not TBD</span></td><td>same host, prod deploymentIds</td><td>Two deploymentIds preserve Mobile vs Live queue split; Toggle flips UI to this path for legacy L1</td></tr>
+  <tr><td class="n">4</td><td>Concierge gateway chat</td><td>RX UI → RX gateway → WXO</td><td>wss (UI) · HTTPS (WXO agent chat API)</td><td>Guest JWT (RX IdP) or anonymous session; WXO API key / IAM</td><td>Chat turns; state in Redis Streams; emits transfer event with handover attributes</td><td>RX AWS landing zone <span class="tbd">TBD</span></td><td><span class="tbd">TBD</span></td><td>Socket-ownership decision (Option A recommended); non-escalated chats invisible to Genesys reporting → feed analytics separately (governance §3.4)</td></tr>
+  <tr><td class="n">5</td><td>Interaction Widget iframe</td><td>Agent browser → WXO</td><td>HTTPS</td><td>Genesys group permission; WXO re-validates conversationId via Genesys API; no PII in URL</td><td>gcConversationId, gcLangTag, gcUsersEmail → Quick Actions, summary, KB, caller-verified</td><td><code>https://dev-concierge.riyadhair.io/…</code> (agent-assist app)</td><td><span class="tbd">TBD</span></td><td>Live in PROD today; PROD URL is the one endpoint already in service</td></tr>
+  <tr><td class="n">6</td><td>AudioHook Monitor</td><td>Genesys → WXO</td><td>wss, monitor-only, channel-separated audio</td><td>API key + secret</td><td>Agent + customer channels; called/calling numbers in metadata</td><td><span class="tbd">TBD</span> (v0.1 showed <code>wss://dev-co…</code>)</td><td><span class="tbd">TBD</span></td><td>Max 5 integrations per org; billed while streaming; same-region server advised</td></tr>
+  <tr><td class="n">7</td><td>Notifications + Conversations API</td><td>WXO → Genesys</td><td>wss (notification channel) + HTTPS REST</td><td>OAuth client credentials at <code>login.mypurecloud.de</code>; least-privilege role</td><td>Conversation/message topics; GET conversation messages for digital Agent Assist</td><td><code>https://api.mypurecloud.de</code> <span class="fixed">Genesys-hosted, not TBD</span></td><td>same</td><td>Channel and topic caps per client → pooled subscription service, not per-conversation subscribe</td></tr>
+  <tr><td class="n">8</td><td>Knowledge API</td><td>WXO → Genesys</td><td>HTTPS</td><td>OAuth client credentials; guest sessions need Knowledge deploymentId</td><td>KB documents, variations Default (guest) / SOP (agent); search by session</td><td><code>https://api.mypurecloud.de</code></td><td>same</td><td>Decide KB of record: Genesys Knowledge vs Adobe AEM (HLD §20.3.5)</td></tr>
+  <tr><td class="n">9</td><td>Callback API</td><td>WXO → Genesys</td><td>HTTPS</td><td>OAuth client credentials</td><td>POST /api/v2/conversations/callbacks (queue, callbackNumbers, scheduledTime)</td><td><code>https://api.mypurecloud.de</code></td><td>same</td><td>HLD sizing 100 RPM</td></tr>
+  <tr><td class="n">10</td><td>CRM data actions (existing)</td><td>Genesys → Dynamics CRM / Profile</td><td>HTTPS</td><td>OAuth client credentials (secrets masked in Genesys)</td><td>getprofile, RXCRMGenerateToken, CrmDetailsByGuestId (PreferredAgent, Case1–3)</td><td><code>rxmsdprod.api.crm4.dynamics.com</code></td><td>same</td><td>Retry once → Unregistered Bot Flow; skipped for anonymous guests</td></tr>
+</table>
+
+<!-- ============ NOTES ROW ============ -->
+<div class="note" style="left:40px;top:1580px;width:610px;height:400px">
+  <b>Use cases (Riyadh Air)</b>
+  <ul>
+    <li><span class="badge b1">UC1</span><b style="display:inline">Voice concierge.</b> Guest calls; Genesys hands audio to WXO Voice Agent; ID&amp;V; self-service or TRANSFER_TO_AGENT with tier/language → routed to BSG/Grey/Loyalty queue, preferred agent first.</li>
+    <li><span class="badge b2">UC2</span><b style="display:inline">Social concierge.</b> WhatsApp/Messenger/X message → Bot Connector → Social Agent; same handover contract; Grey queue on failure.</li>
+    <li><span class="badge b3">UC3</span><b style="display:inline">Web &amp; mobile concierge.</b> Watson-first chat via RX gateway; on transfer the UI joins Genesys Web Messaging with the governed attributes so existing S1/S2/S3 flows and CRM preferred-agent routing run unchanged. Toggle reverts to legacy L1.</li>
+    <li><span class="badge b4">UC4</span><b style="display:inline">Agent Assist (PROD today).</b> Iframe + AudioHook Monitor (voice) or Notifications API (digital) + Knowledge search; summary at wrap-up.</li>
+    <li><span class="badge b5">UC5</span><b style="display:inline">Callback.</b> Concierge schedules a Genesys callback on the guest's behalf.</li>
+  </ul>
+</div>
+<div class="note" style="left:670px;top:1580px;width:610px;height:400px">
+  <b>Corrections applied vs v0.1</b>
+  <ul>
+    <li>Initiator shown on every arrow; Bot Connector, Audio Connector and AudioHook are Genesys-initiated (v0.1 pointed them the other way).</li>
+    <li>RX edge (Akamai + App Gateway) restored between Genesys and WXO; environments and prod host made explicit.</li>
+    <li>Mobile channel added with its own deploymentId; Facebook and X added to social scope.</li>
+    <li>Session-variable contract and governance attribute freeze written onto the diagram.</li>
+    <li>Auth per interface added; Genesys egress CIDRs listed.</li>
+    <li>Failure/fallback paths and Audio Connector limits (900 s, 75 calls) added.</li>
+    <li>Rows 3, 7, 8, 9 marked Genesys-hosted: only Audio Connector, Bot Connector, iframe, AudioHook and gateway need SaaS URLs.</li>
+    <li>Table row 1 host updated from CPD (PaaS) to the Orchestrate dev host TPI already has.</li>
+    <li>Digital Control Toggle and post-transfer socket ownership surfaced as decisions.</li>
+    <li>Spelling: Genesys, Microservices, Connector, Receiver; "Interactive Panel" → Interaction Widget.</li>
+  </ul>
+</div>
+<div class="note" style="left:1300px;top:1580px;width:610px;height:400px">
+  <b>Open decisions for the LLD (owner)</b>
+  <ul>
+    <li>Prod hostnames and WXO SaaS region; KSA residency position (RX Architecture).</li>
+    <li>Post-transfer socket ownership, Option A vs B (RX Concierge team).</li>
+    <li>Arabic STT/TTS engine in SaaS: IBM vs Emotech (IBM / RX AI).</li>
+    <li>Mobile: Guest API path confirmed? Second deploymentId (RX Digital).</li>
+    <li>Web Messaging (current) vs legacy Guest Chat API linked in HLD v3 (TPI).</li>
+    <li>Notification subscription pooling design and OAuth role scope (IBM / TPI).</li>
+    <li>Knowledge base of record: Genesys Knowledge vs AEM (RX Content).</li>
+    <li>Analytics feed for non-escalated Concierge sessions (RX Data).</li>
+    <li>Go-live timeline per channel so TPI can phase the LLD (Nithya).</li>
+  </ul>
+</div>
+<div class="note legend" style="left:1930px;top:1580px;width:650px;height:400px">
+  <b>Legend</b>
+  <div style="margin-bottom:6px"><span><i class="sw" style="background:#6d28d9"></i>UC1 voice</span><span><i class="sw" style="background:#15803d"></i>UC2 social</span><span><i class="sw" style="background:#1d4ed8"></i>UC3 web/mobile</span></div>
+  <div style="margin-bottom:6px"><span><i class="sw" style="background:#c2410c"></i>UC4 agent assist</span><span><i class="sw" style="background:#6b7280"></i>UC5 callback</span><span><i class="sw" style="background:#2f8f5b;border-top:2px dotted #2f8f5b;height:0"></i>ACD routing to agent</span></div>
+  <div style="margin-bottom:6px">● at arrow start = connection initiator (drives allowlisting) · dashed = return/response path or control flow · solid = data path</div>
+  <div style="margin-bottom:6px"><span class="tbd">TBD</span> = not yet defined, blocks TPI LLD · <span class="fixed">Genesys-hosted</span> = fixed by Genesys region, no SaaS URL needed</div>
+  <div style="margin-top:8px;color:var(--muted)">Zones: green Genesys Cloud (Frankfurt) · purple RX edge · yellow watsonx Orchestrate SaaS · blue RX AWS gateway. Protocol per arrow is in its label; wss = WebSocket over TLS, HTTPS = REST/JSON.</div>
+  <div style="margin-top:8px;color:var(--muted)">Prepared 30 Sep 2026 for the "Genesys Concierge Design Documents" thread (Veda, Nithya, TPI/IST). Draft for review, not an approved design.</div>
+</div>
+
+</body>
+</html>

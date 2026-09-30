@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 (async () => {
   const [inFile, outFile] = process.argv.slice(2);
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium/chrome-linux/chrome' }).catch(async () => chromium.launch());
-  const page = await browser.newPage({ viewport: { width: 2620, height: 2010 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 2400, height: 2080 }, deviceScaleFactor: 1 });
   await page.goto('file://' + path.resolve(inFile), { waitUntil: 'load' });
   await page.waitForTimeout(300);
   await page.screenshot({ path: outFile, fullPage: true });
