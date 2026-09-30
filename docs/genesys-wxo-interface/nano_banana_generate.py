@@ -9,7 +9,7 @@ Optional:  GEMINI_IMAGE_MODEL (default gemini-3-pro-image-preview, i.e. Nano Ban
            set to the newer model id if your account has "Nano Banana Pro 2").
 
 Usage:
-  python3 nano_banana_generate.py genesys-wxo-interface-v0.2.png out-nano-banana.png
+  python3 nano_banana_generate.py genesys-wxo-interface-v0.2.jpg out-nano-banana.png
 """
 import base64, json, os, sys, urllib.request
 
@@ -19,7 +19,8 @@ if not API_KEY:
              "settings (Edit environment > environment variables) and start a new session.")
 
 MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3-pro-image-preview")
-ref_png, out_png = sys.argv[1], sys.argv[2]
+ref_img, out_png = sys.argv[1], sys.argv[2]
+mime = "image/jpeg" if ref_img.lower().endswith((".jpg", ".jpeg")) else "image/png"
 
 PROMPT = """You are producing a clean, professional enterprise architecture diagram for Riyadh Air.
 Redraw the attached reference diagram as a polished 16:9 presentation slide. Keep EVERY label,
@@ -45,7 +46,7 @@ Content that must appear verbatim:
 Style: flat vector look, white background, thin rounded boxes, legible sans-serif text at small sizes,
 no 3D, no photos, no decorative icons beyond simple phone/chat/agent glyphs."""
 
-with open(ref_png, "rb") as f:
+with open(ref_img, "rb") as f:
     ref_b64 = base64.b64encode(f.read()).decode()
 
 body = {
@@ -53,7 +54,7 @@ body = {
         "role": "user",
         "parts": [
             {"text": PROMPT},
-            {"inline_data": {"mime_type": "image/png", "data": ref_b64}},
+            {"inline_data": {"mime_type": mime, "data": ref_b64}},
         ],
     }],
     "generationConfig": {
